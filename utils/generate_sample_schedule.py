@@ -32,83 +32,96 @@ def generate_sample_schedule():
     c.drawString(1*inch, height - 1.3*inch,
                 f"Week of {monday.strftime('%m/%d/%Y')} - {friday.strftime('%m/%d/%Y')}")
 
-    # Sample schedule data
-    specialists = [
-        {
-            "name": "Dr. Johnson",
-            "sessions": [
-                {"day": "Monday", "date": monday.strftime('%m/%d/%Y'),
-                 "appointments": [
-                     ("9:00 AM", "Sarah Williams", "1 on 1 session"),
-                     ("10:00 AM", "Mike Chen", "1 on 1 session"),
-                     ("11:00 AM", "Group Therapy", "Group session"),
-                     ("2:00 PM", "Emily Davis", "1 on 1 session"),
-                 ]},
-                {"day": "Wednesday", "date": (monday + timedelta(days=2)).strftime('%m/%d/%Y'),
-                 "appointments": [
-                     ("9:00 AM", "John Smith", "1 on 1 session"),
-                     ("10:30 AM", "Lisa Anderson", "1 on 1 session"),
-                     ("1:00 PM", "Group Therapy", "Group session"),
-                     ("3:00 PM", "Robert Brown", "1 on 1 session"),
-                 ]},
-                {"day": "Friday", "date": (monday + timedelta(days=4)).strftime('%m/%d/%Y'),
-                 "appointments": [
-                     ("9:00 AM", "Sarah Williams", "1 on 1 session"),
-                     ("10:00 AM", "Mike Chen", "1 on 1 session"),
-                     ("2:00 PM", "Emily Davis", "1 on 1 session"),
-                 ]}
+    # Sample schedule data organized by days
+    week_schedule = {
+        "Monday": {
+            "date": monday.strftime('%m/%d/%Y'),
+            "appointments": [
+                ("9:00 AM", "Dr. Johnson", "Sarah Williams", "1 on 1 session"),
+                ("10:00 AM", "Dr. Johnson", "Mike Chen", "1 on 1 session"),
+                ("10:00 AM", "Ms. Thompson", "Susan Park", "1 on 1 session"),
+                ("11:00 AM", "Dr. Johnson", "Group Therapy", "Group session"),
+                ("11:00 AM", "Ms. Thompson", "Michael Brown", "1 on 1 session"),
+                ("1:00 PM", "Ms. Thompson", "Group Therapy", "Group session"),
+                ("2:00 PM", "Dr. Johnson", "Emily Davis", "1 on 1 session"),
+                ("3:00 PM", "Ms. Thompson", "Ashley Jones", "1 on 1 session"),
             ]
         },
-        {
-            "name": "Dr. Smith",
-            "sessions": [
-                {"day": "Tuesday", "date": (monday + timedelta(days=1)).strftime('%m/%d/%Y'),
-                 "appointments": [
-                     ("9:00 AM", "Alex Johnson", "1 on 1 session"),
-                     ("10:00 AM", "Maria Garcia", "1 on 1 session"),
-                     ("11:00 AM", "David Wilson", "1 on 1 session"),
-                     ("2:00 PM", "Group Therapy", "Group session"),
-                 ]},
-                {"day": "Thursday", "date": (monday + timedelta(days=3)).strftime('%m/%d/%Y'),
-                 "appointments": [
-                     ("10:00 AM", "Jennifer Lee", "1 on 1 session"),
-                     ("11:00 AM", "James Martinez", "1 on 1 session"),
-                     ("1:00 PM", "Alex Johnson", "1 on 1 session"),
-                     ("3:00 PM", "Group Therapy", "Group session"),
-                 ]}
+        "Tuesday": {
+            "date": (monday + timedelta(days=1)).strftime('%m/%d/%Y'),
+            "appointments": [
+                ("9:00 AM", "Dr. Smith", "Alex Johnson", "1 on 1 session"),
+                ("10:00 AM", "Dr. Smith", "Maria Garcia", "1 on 1 session"),
+                ("11:00 AM", "Dr. Smith", "David Wilson", "1 on 1 session"),
+                ("2:00 PM", "Dr. Smith", "Group Therapy", "Group session"),
+            ]
+        },
+        "Wednesday": {
+            "date": (monday + timedelta(days=2)).strftime('%m/%d/%Y'),
+            "appointments": [
+                ("9:00 AM", "Dr. Johnson", "John Smith", "1 on 1 session"),
+                ("9:00 AM", "Ms. Thompson", "Tom Anderson", "1 on 1 session"),
+                ("10:00 AM", "Ms. Thompson", "Susan Park", "1 on 1 session"),
+                ("10:30 AM", "Dr. Johnson", "Lisa Anderson", "1 on 1 session"),
+                ("1:00 PM", "Dr. Johnson", "Group Therapy", "Group session"),
+                ("2:00 PM", "Ms. Thompson", "Michael Brown", "1 on 1 session"),
+                ("3:00 PM", "Dr. Johnson", "Robert Brown", "1 on 1 session"),
+            ]
+        },
+        "Thursday": {
+            "date": (monday + timedelta(days=3)).strftime('%m/%d/%Y'),
+            "appointments": [
+                ("10:00 AM", "Dr. Smith", "Jennifer Lee", "1 on 1 session"),
+                ("11:00 AM", "Dr. Smith", "James Martinez", "1 on 1 session"),
+                ("1:00 PM", "Dr. Smith", "Alex Johnson", "1 on 1 session"),
+                ("3:00 PM", "Dr. Smith", "Group Therapy", "Group session"),
+            ]
+        },
+        "Friday": {
+            "date": (monday + timedelta(days=4)).strftime('%m/%d/%Y'),
+            "appointments": [
+                ("9:00 AM", "Dr. Johnson", "Sarah Williams", "1 on 1 session"),
+                ("10:00 AM", "Dr. Johnson", "Mike Chen", "1 on 1 session"),
+                ("10:00 AM", "Ms. Thompson", "Group Therapy", "Group session"),
+                ("1:00 PM", "Ms. Thompson", "Ashley Jones", "1 on 1 session"),
+                ("2:00 PM", "Dr. Johnson", "Emily Davis", "1 on 1 session"),
+                ("2:00 PM", "Ms. Thompson", "Tom Anderson", "1 on 1 session"),
             ]
         }
-    ]
+    }
 
-    # Draw the schedule
+    # Draw the schedule grouped by days
     y_position = height - 2*inch
 
-    for specialist in specialists:
-        # Specialist name
+    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+    for day_name in days_order:
+        day_info = week_schedule[day_name]
+
+        # Day header
         c.setFont("Helvetica-Bold", 14)
-        c.drawString(1*inch, y_position, specialist["name"])
+        c.drawString(1*inch, y_position, f"{day_name} - {day_info['date']}")
         y_position -= 0.3*inch
 
-        for session_day in specialist["sessions"]:
-            # Day and date
-            c.setFont("Helvetica-Bold", 12)
-            c.drawString(1.2*inch, y_position, f"{session_day['day']} - {session_day['date']}")
-            y_position -= 0.2*inch
+        # Sort appointments by time for better readability
+        sorted_appointments = sorted(day_info['appointments'],
+                                    key=lambda x: (x[0].split()[0].zfill(2), x[0].split()[1]))
 
-            # Appointments
-            c.setFont("Helvetica", 10)
-            for time, client, session_type in session_day["appointments"]:
-                c.drawString(1.5*inch, y_position, f"{time}: {client} - {session_type}")
-                y_position -= 0.15*inch
+        # Draw appointments
+        c.setFont("Helvetica", 10)
+        for time, specialist, client, session_type in sorted_appointments:
+            appointment_text = f"{time}: {specialist} - {client} ({session_type})"
+            c.drawString(1.3*inch, y_position, appointment_text)
+            y_position -= 0.18*inch
 
-            y_position -= 0.1*inch
-
-        y_position -= 0.3*inch
+        y_position -= 0.2*inch
 
         # Check if we need a new page
         if y_position < 2*inch:
             c.showPage()
-            y_position = height - 1*inch
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(1*inch, height - 1*inch, "Weekly Schedule (Continued)")
+            y_position = height - 1.5*inch
 
     # Save the PDF
     c.save()

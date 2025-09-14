@@ -1,0 +1,198 @@
+# Orchestrator Interface Specification
+# Python class interface for the intelligent routing orchestrator
+
+interface: OrchestratorInterface
+version: 0.1.0
+type: Python Class
+
+methods:
+  - name: analyze_request
+    description: Analyze user request and determine required agents
+    parameters:
+      - name: text
+        type: str
+        required: true
+        description: Natural language request
+        max_length: 1000
+      - name: conversation_id
+        type: str
+        required: true
+        description: Conversation context identifier
+      - name: user_id
+        type: str
+        required: false
+        description: Optional user identifier
+      - name: metadata
+        type: dict
+        required: false
+        description: Additional context
+    returns:
+      type: AnalysisResult
+      fields:
+        - id: str (UUID)
+        - request_id: str (UUID)
+        - intent: str
+        - confidence: float (0.0-1.0)
+        - required_agents: List[str]
+        - requires_clarification: bool
+        - clarification_options: List[str]
+        - context_used: dict
+        - execution_plan: str
+    exceptions:
+      - InvalidRequestError: When text is empty or too long
+      - AnalysisTimeoutError: When analysis exceeds 30 seconds
+
+  - name: execute_plan
+    description: Execute coordination plan based on analysis
+    parameters:
+      - name: analysis_id
+        type: str
+        required: true
+        description: UUID from analyze_request
+      - name: async_mode
+        type: bool
+        required: false
+        default: false
+        description: Execute asynchronously
+    returns:
+      type: ExecutionResult
+      fields:
+        - id: str (UUID)
+        - status: str (completed|failed|cancelled)
+        - result: dict
+        - errors: List[str]
+        - execution_time: float (seconds)
+    exceptions:
+      - PlanNotFoundError: When analysis_id doesn't exist
+      - ExecutionError: When plan execution fails
+      - TimeoutError: When execution exceeds limits
+
+  - name: clarify_request
+    description: Submit clarification for ambiguous request
+    parameters:
+      - name: analysis_id
+        type: str
+        required: true
+        description: UUID of ambiguous analysis
+      - name: selected_option
+        type: str
+        required: true
+        description: User's selected clarification
+      - name: additional_context
+        type: str
+        required: false
+        description: Extra information from user
+    returns:
+      type: AnalysisResult
+      description: New analysis with clarification applied
+    exceptions:
+      - InvalidClarificationError: When option not in original options
+
+  - name: list_agents
+    description: Get available agents and their capabilities
+    parameters: null
+    returns:
+      type: List[Agent]
+      fields:
+        - id: str
+        - name: str
+        - description: str
+        - capabilities: List[str]
+        - status: str (available|busy|error|maintenance)
+        - data_source: str
+
+  - name: get_execution_status
+    description: Check status of async execution
+    parameters:
+      - name: execution_id
+        type: str
+        required: true
+        description: UUID from async execute_plan
+    returns:
+      type: ExecutionStatus
+      fields:
+        - id: str (UUID)
+        - status: str (planned|executing|completed|failed|cancelled)
+        - progress: dict
+        - total_steps: int
+        - completed_steps: int
+        - current_step: str
+    exceptions:
+      - ExecutionNotFoundError: When execution_id doesn't exist
+
+# Class structure example
+example_implementation: |
+  from typing import List, Optional, Dict
+  from uuid import UUID
+  from dataclasses import dataclass
+
+  @dataclass
+  class AnalysisResult:
+      id: UUID
+      request_id: UUID
+      intent: str
+      confidence: float
+      required_agents: List[str]
+      requires_clarification: bool
+      clarification_options: List[str]
+      context_used: Dict
+      execution_plan: str
+
+  class Orchestrator:
+      def __init__(self, agent_registry, context_manager, intent_analyzer):
+          self.agent_registry = agent_registry
+          self.context_manager = context_manager
+          self.intent_analyzer = intent_analyzer
+
+      def analyze_request(self, text: str, conversation_id: str,
+                         user_id: Optional[str] = None,
+                         metadata: Optional[Dict] = None) -> AnalysisResult:
+          """Analyze user request and determine required agents"""
+          pass
+
+      def execute_plan(self, analysis_id: str,
+                       async_mode: bool = False) -> ExecutionResult:
+          """Execute coordination plan based on analysis"""
+          pass
+
+      def clarify_request(self, analysis_id: str, selected_option: str,
+                         additional_context: Optional[str] = None) -> AnalysisResult:
+          """Submit clarification for ambiguous request"""
+          pass
+
+      def list_agents(self) -> List[Agent]:
+          """Get available agents and their capabilities"""
+          pass
+
+      def get_execution_status(self, execution_id: str) -> ExecutionStatus:
+          """Check status of async execution"""
+          pass
+
+# Usage example
+usage_example: |
+  # Initialize orchestrator
+  orchestrator = Orchestrator(
+      agent_registry=AgentRegistry(),
+      context_manager=ContextManager(),
+      intent_analyzer=IntentAnalyzer()
+  )
+
+  # Analyze request
+  analysis = orchestrator.analyze_request(
+      text="Who are the parents of Dr. Johnson's morning appointments?",
+      conversation_id="conv-123",
+      user_id="user-456"
+  )
+
+  # Check if clarification needed
+  if analysis.requires_clarification:
+      print(f"Please clarify: {analysis.clarification_options}")
+      # Get user selection...
+      analysis = orchestrator.clarify_request(
+          analysis_id=analysis.id,
+          selected_option=user_choice
+      )
+
+  # Execute plan
+  result = orchestrator.execute_plan(analysis.id)
+  print(f"Result: {result.result}")

@@ -9,16 +9,24 @@ import os
 
 class MarkdownReader(BaseTool):
     name: str = "Markdown Reader"
-    description: str = "Reads and parses markdown files containing client information"
+    description: str = "Reads and parses markdown files containing client information. Use this tool ONLY ONCE per task to read the file."
 
     def _run(self, file_path: str) -> str:
         """Read markdown file and return content"""
         try:
+            # Ensure we're reading the correct file
+            if not os.path.exists(file_path):
+                return f"File {file_path} not found. Please check the file path."
+
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
+
+            if not content.strip():
+                return "File is empty. No client data found."
+
             return content
         except FileNotFoundError:
-            return f"File {file_path} not found"
+            return f"File {file_path} not found. Please check the file path."
         except Exception as e:
             return f"Error reading file: {str(e)}"
 

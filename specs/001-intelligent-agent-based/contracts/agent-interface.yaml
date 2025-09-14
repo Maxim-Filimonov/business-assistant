@@ -1,0 +1,174 @@
+# Agent Interface Specification
+# All agents must implement this interface for orchestrator compatibility
+
+interface: AgentInterface
+version: 0.1.0
+
+methods:
+  - name: get_capabilities
+    description: Return list of capabilities this agent provides
+    input: null
+    output:
+      type: array
+      items:
+        type: string
+    example:
+      output: ["search_clients", "get_parent_info", "update_client_data"]
+
+  - name: can_handle
+    description: Check if agent can handle a specific request
+    input:
+      type: object
+      properties:
+        intent:
+          type: string
+        context:
+          type: object
+    output:
+      type: object
+      properties:
+        can_handle:
+          type: boolean
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        reason:
+          type: string
+    example:
+      input:
+        intent: "find_client_parents"
+        context: {}
+      output:
+        can_handle: true
+        confidence: 0.95
+        reason: "Can search clients and retrieve parent information"
+
+  - name: execute_task
+    description: Execute a specific task
+    input:
+      type: object
+      properties:
+        task_description:
+          type: string
+        input_data:
+          type: object
+        context:
+          type: object
+    output:
+      type: object
+      properties:
+        success:
+          type: boolean
+        result:
+          type: object
+        error:
+          type: string
+          optional: true
+    example:
+      input:
+        task_description: "Find parents of clients Sarah Williams and Mike Chen"
+        input_data:
+          clients: ["Sarah Williams", "Mike Chen"]
+        context: {}
+      output:
+        success: true
+        result:
+          parents:
+            - client: "Sarah Williams"
+              parent: "Jennifer Williams"
+            - client: "Mike Chen"
+              parent: "David Chen"
+
+  - name: get_dependencies
+    description: Return list of other agents this agent might need
+    input: null
+    output:
+      type: array
+      items:
+        type: string
+    example:
+      output: []  # No dependencies for base CRM agent
+
+  - name: get_status
+    description: Return current agent status
+    input: null
+    output:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [available, busy, error, maintenance]
+        message:
+          type: string
+    example:
+      output:
+        status: "available"
+        message: "Ready to process requests"
+
+# Standard agent properties
+properties:
+  - name: id
+    type: string
+    required: true
+    description: Unique agent identifier
+
+  - name: name
+    type: string
+    required: true
+    description: Human-friendly agent name
+
+  - name: description
+    type: string
+    required: true
+    description: What this agent does
+
+  - name: version
+    type: string
+    required: true
+    description: Agent version (semantic versioning)
+
+  - name: data_source
+    type: string
+    required: false
+    description: Primary data source
+
+# Event hooks (optional)
+hooks:
+  - name: on_register
+    description: Called when agent registers with orchestrator
+
+  - name: on_task_start
+    description: Called before task execution
+
+  - name: on_task_complete
+    description: Called after task execution
+
+  - name: on_error
+    description: Called when error occurs
+
+# Example implementation structure
+example:
+  class_structure: |
+    class BaseAgent:
+        def __init__(self, agent_id: str, name: str, description: str):
+            self.id = agent_id
+            self.name = name
+            self.description = description
+            self.version = "0.1.0"
+
+        def get_capabilities(self) -> List[str]:
+            raise NotImplementedError
+
+        def can_handle(self, intent: str, context: dict) -> dict:
+            raise NotImplementedError
+
+        def execute_task(self, task_description: str,
+                        input_data: dict, context: dict) -> dict:
+            raise NotImplementedError
+
+        def get_dependencies(self) -> List[str]:
+            return []
+
+        def get_status(self) -> dict:
+            return {"status": "available", "message": "Ready"}

@@ -21,7 +21,13 @@ def crm_agent(clients_file="data/clients.md"):
         various data input formats.
 
         The client data is stored in a markdown file located at: {clients_file}
-        You must use this file path when you need to read or write client data.""",
+
+        IMPORTANT INSTRUCTIONS:
+        1. Use the Markdown Reader tool ONLY ONCE to read the file at: {clients_file}
+        2. After reading the file, use the Client Parser tool to parse the content
+        3. Do NOT repeatedly read the same file - read it once and work with the data
+        4. If the file is empty or has incomplete data, report what's available
+        5. You have a maximum of 3 iterations to complete your task""",
         tools=[
             MarkdownReader(),
             SafeMarkdownWriter(),
@@ -31,5 +37,6 @@ def crm_agent(clients_file="data/clients.md"):
         verbose=True,
         allow_delegation=False,
         max_iter=3,
-        memory=True
+        memory=True,
+        max_execution_time=30  # Add timeout to prevent infinite loops
     )
