@@ -128,9 +128,58 @@ class ClientFormatter(BaseTool):
         phone = client_info.get('phone', 'Not specified')
         email = client_info.get('email', 'Not specified')
 
-        formatted = f"""## {name}
+        formatted = f"""
+## {name}
 Parent - {parent}
 Phone number {phone}
 Email address {email}"""
 
         return formatted
+
+class SafeMarkdownWriter(BaseTool):
+    name: str = "Safe Markdown Writer"
+    description: str = "Safely writes client information to markdown files, preventing data loss."
+
+    def _run(self, file_path: str, old_content: str, new_content: str) -> str:
+        """
+        Safely write content to markdown file, preventing data loss.
+        """
+        try:
+            # 1. Read the current content of the file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                current_content = f.read()
+
+            # 2. Compare old_content with current_content
+            if old_content.strip() != current_content.strip():
+                return (
+                    "Error: The file has been modified since you last read it. "
+                    "Please read the file again and re-apply your changes."
+                )
+
+            # 3. Use ClientParser to count clients
+            parser = ClientParser()
+            old_clients = parser._run(content=old_content)
+            new_clients = parser._run(content=new_content)
+
+            # 4. Check for data loss
+            if len(new_clients) < len(old_clients):
+                return (
+                    f"Error: The new content has fewer clients ({len(new_clients)}) "
+                    f"than the old content ({len(old_clients)}). "
+                    "To prevent data loss, the write operation was aborted."
+                )
+
+            # 5. Write the new content
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+
+            return f"Successfully wrote to {file_path}"
+
+        except FileNotFoundError:
+            # If the file doesn't exist, it's safe to write it.
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            return f"Successfully created and wrote to {file_path}"
+
+        except Exception as e:
+            return f"Error writing file: {str(e)}"

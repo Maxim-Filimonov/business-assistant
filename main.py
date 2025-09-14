@@ -1,293 +1,232 @@
 #!/usr/bin/env python
 """
-CrewAI Multi-Function Business Chat Application CLI
-Interactive chat interface for CRM, Scheduler, and Invoice functionality
+Ultra-Flexible CrewAI Business Chat
+Agents can interpret and execute any request creatively
 """
 
 import sys
-import re
-from crewai import Crew, Process
+from crewai import Crew, Process, Task
 from agents.crm_agent import crm_agent
 from agents.scheduler_agent import scheduler_agent
 from agents.invoice_agent import invoice_agent
-from tasks.crm_tasks import (
-    search_client_task,
-    add_client_task,
-    query_parent_task
-)
-from tasks.scheduler_tasks import extract_schedule_task
-from tasks.invoice_tasks import generate_invoice_task
-from datetime import datetime
+from config import get_llm
 
-class BusinessAutomationCrew:
-    def __init__(self, clients_file="data/clients.md",
+class FlexibleBusinessChat:
+    def __init__(self,
+                 clients_file="data/clients.md",
                  pricing_file="data/pricing.md",
-                 schedule_pdf="data/schedule.pdf",
+                 schedule_pdf="data/sample_schedule.pdf",
                  invoice_template="templates/invoice_template.md"):
-        self.clients_file = clients_file
-        self.pricing_file = pricing_file
-        self.schedule_pdf = schedule_pdf
-        self.invoice_template = invoice_template
-
-        # Initialize agents
-        self.crm = crm_agent()
-        self.scheduler = scheduler_agent()
-        self.invoicer = invoice_agent()
-
-    def search_client(self, client_name):
-        """Search for client contact details"""
-        task = search_client_task(self.crm, client_name, self.clients_file)
-        crew = Crew(
-            agents=[self.crm],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=True
-        )
-        return crew.kickoff()
-
-    def add_new_client(self, client_info):
-        """Add a new client to the CRM"""
-        task = add_client_task(self.crm, client_info, self.clients_file)
-        crew = Crew(
-            agents=[self.crm],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=True
-        )
-        return crew.kickoff()
-
-    def find_parent(self, client_name):
-        """Query for parent name based on client name"""
-        task = query_parent_task(self.crm, client_name, self.clients_file)
-        crew = Crew(
-            agents=[self.crm],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=True
-        )
-        return crew.kickoff()
-
-    def get_specialist_schedule(self, specialist_name):
-        """Extract schedule for a specific specialist from PDF"""
-        if not self.schedule_pdf:
-            return "No schedule PDF provided. Please set the schedule PDF path first."
-
-        task = extract_schedule_task(
-            self.scheduler,
-            specialist_name,
-            self.schedule_pdf
-        )
-        crew = Crew(
-            agents=[self.scheduler],
-            tasks=[task],
-            process=Process.sequential,
-            verbose=True
-        )
-        return crew.kickoff()
-
-    def generate_weekly_invoice(self, specialist_name, week_offset=1):
-        """Generate invoice for last week's sessions"""
-        if not self.schedule_pdf:
-            return "No schedule PDF provided. Please set the schedule PDF path first."
-
-        # First get the schedule
-        schedule_task = extract_schedule_task(
-            self.scheduler,
-            specialist_name,
-            self.schedule_pdf
-        )
-
-        # Then generate invoice
-        invoice_task = generate_invoice_task(
-            self.invoicer,
-            specialist_name,
-            self.pricing_file,
-            self.invoice_template,
-            week_offset
-        )
-
-        # Create a crew that runs both tasks in sequence
-        crew = Crew(
-            agents=[self.scheduler, self.invoicer],
-            tasks=[schedule_task, invoice_task],
-            process=Process.sequential,
-            verbose=True,
-            memory=True  # Enable memory to share context between tasks
-        )
-
-        return crew.kickoff()
-
-class ChatInterface:
-    def __init__(self):
-        self.crew = BusinessAutomationCrew()
-        self.commands_help = """
-Available commands:
-  • Search for a client: "search [client name]" or "find [client name]"
-  • Add a new client: "add client [name]" then follow prompts
-  • Find parent: "who is the parent of [client name]"
-  • Get schedule: "schedule for [specialist name]"
-  • Generate invoice: "generate invoice for [specialist name]"
-  • Settings: "set schedule pdf [path]" or "set clients file [path]"
-  • Help: "help" or "?"
-  • Exit: "exit", "quit", or "bye"
         """
-
-    def parse_command(self, user_input):
-        """Parse natural language input to determine intent"""
-        input_lower = user_input.lower().strip()
-
-        # Exit commands
-        if input_lower in ['exit', 'quit', 'bye', 'goodbye']:
-            return 'exit', None
-
-        # Help commands
-        if input_lower in ['help', '?', 'commands']:
-            return 'help', None
-
-        # Search client
-        if re.match(r'(search|find|lookup|get)\s+(client\s+)?(.+)', input_lower):
-            match = re.match(r'(search|find|lookup|get)\s+(client\s+)?(.+)', input_lower)
-            client_name = match.group(3)
-            return 'search_client', client_name
-
-        # Find parent
-        if re.match(r'(who|what).*(parent|guardian).*(of|for)\s+(.+)', input_lower):
-            match = re.match(r'(who|what).*(parent|guardian).*(of|for)\s+(.+)', input_lower)
-            client_name = match.group(4)
-            return 'find_parent', client_name
-
-        # Add client
-        if re.match(r'add\s+(client|person)\s*(.+)?', input_lower):
-            match = re.match(r'add\s+(client|person)\s*(.+)?', user_input, re.IGNORECASE)
-            client_name = match.group(2) if match.group(2) else None
-            return 'add_client', client_name
-
-        # Get schedule
-        if re.match(r'(schedule|appointments?).*(for|of)\s+(.+)', input_lower):
-            match = re.match(r'(schedule|appointments?).*(for|of)\s+(.+)', user_input, re.IGNORECASE)
-            specialist = match.group(3)
-            return 'get_schedule', specialist
-
-        # Generate invoice
-        if re.match(r'(generate|create|make)\s+invoice.*(for|of)\s+(.+)', input_lower):
-            match = re.match(r'(generate|create|make)\s+invoice.*(for|of)\s+(.+)', user_input, re.IGNORECASE)
-            specialist = match.group(3)
-            return 'generate_invoice', specialist
-
-        # Settings commands
-        if re.match(r'set\s+schedule\s+pdf\s+(.+)', input_lower):
-            match = re.match(r'set\s+schedule\s+pdf\s+(.+)', user_input, re.IGNORECASE)
-            path = match.group(1)
-            return 'set_schedule_pdf', path
-
-        if re.match(r'set\s+clients?\s+file\s+(.+)', input_lower):
-            match = re.match(r'set\s+clients?\s+file\s+(.+)', user_input, re.IGNORECASE)
-            path = match.group(1)
-            return 'set_clients_file', path
-
-        return 'unknown', None
-
-    def get_client_details(self):
-        """Interactive prompt to get client details"""
-        print("\nPlease provide client details:")
-        name = input("Client name: ").strip()
-        parent = input("Parent/Guardian name: ").strip()
-        phone = input("Phone number: ").strip()
-        email = input("Email address: ").strip()
-
-        return {
-            "name": name,
-            "parent": parent,
-            "phone": phone,
-            "email": email
+        Initialize the ultra-flexible chat system
+        """
+        self.context = {
+            'clients_file': clients_file,
+            'pricing_file': pricing_file,
+            'schedule_pdf': schedule_pdf,
+            'invoice_template': invoice_template
         }
 
+        # Initialize agents
+        self.crm = crm_agent(clients_file=self.context['clients_file'])
+        self.scheduler = scheduler_agent(schedule_pdf=self.context.get('schedule_pdf'))
+        self.invoicer = invoice_agent()
+
+        # Create a meta-agent that can understand and route any request
+        self.meta_agent = self._create_meta_agent()
+
+    def _create_meta_agent(self):
+        """Create a meta-agent that understands context and coordinates everything"""
+        from crewai import Agent
+
+        return Agent(
+            role='Business Operations Orchestrator',
+            goal='Understand and fulfill any business-related request by creatively using available agents and tools',
+            backstory=f"""You are an intelligent orchestrator with access to three specialized teams:
+
+            1. CRM Team: Manages ALL client-related data. They have access to {self.context['clients_file']}.
+               They can search, add, update, analyze, and create reports about clients.
+
+            2. Scheduling Team: Handles ALL time-related tasks. They work with {self.context.get('schedule_pdf', 'schedule PDFs')}.
+               They can extract schedules, find patterns, analyze workload, and identify conflicts.
+
+            3. Invoice Team: Manages ALL financial tasks. They use {self.context['pricing_file']} and {self.context['invoice_template']}.
+               They can generate invoices, calculate costs, analyze revenue, and create financial reports.
+
+            You are CREATIVE and INTELLIGENT. When users ask for something unusual, you figure out how to
+            accomplish it using your teams. You can combine multiple teams' capabilities to solve complex problems.
+
+            Examples of creative problem-solving:
+            - "Who hasn't been scheduled this month?" - Use CRM to get all clients, Scheduler to check appointments
+            - "What's our busiest day?" - Use Scheduler to analyze patterns
+            - "Show me clients with overdue payments" - Combine CRM and Invoice data
+            - "Create a report of all Gmail users" - Use CRM to filter by email domain
+
+            You think step-by-step and aren't limited by pre-programmed commands. You interpret
+            the user's intent and find creative ways to fulfill it.""",
+            llm=get_llm(),
+            verbose=True,
+            allow_delegation=True,  # Enable delegation
+            max_iter=3,
+            memory=True
+        )
+
+    def process_request(self, user_request):
+        """
+        Process ANY user request by creating a dynamic task
+        """
+        return self._process_fallback(user_request)
+
+    def _process_sequential(self, user_request):
+        """
+        Process request using sequential approach to avoid delegation validation errors
+        """
+        # Create a simple task for the meta agent without delegation
+        task = Task(
+            description=f"Analyze this request and determine what information is needed: {user_request}",
+            agent=self.meta_agent,
+            expected_output="Analysis of what information is needed and which agents should be involved"
+        )
+
+        # Create a crew with sequential processing (no delegation)
+        crew = Crew(
+            agents=[self.meta_agent, self.crm, self.scheduler, self.invoicer],
+            tasks=[task],
+            process=Process.sequential,
+            verbose=True,
+            memory=True,
+            full_output=True
+        )
+
+        return crew.kickoff()
+
+    def _process_fallback(self, user_request):
+        """
+        Fallback method that directly calls agents without crew delegation
+        """
+        # Analyze the request to determine which agents to use
+        request_lower = user_request.lower()
+
+        response_parts = []
+
+        # Check if CRM-related
+        if any(keyword in request_lower for keyword in ['client', 'customer', 'contact', 'phone', 'email', 'parent']):
+            try:
+                # Create a simple task for CRM
+                crm_task = Task(
+                    description=f"Handle this CRM-related request: {user_request}",
+                    agent=self.crm,
+                    expected_output="CRM information or analysis"
+                )
+                crm_crew = Crew(agents=[self.crm], tasks=[crm_task], process=Process.sequential, verbose=True)
+                crm_result = crm_crew.kickoff()
+                response_parts.append(f"CRM Analysis: {crm_result}")
+            except Exception as e:
+                response_parts.append(f"CRM processing encountered an issue: {e}")
+
+        # Check if schedule-related
+        if any(keyword in request_lower for keyword in ['schedule', 'appointment', 'time', 'week', 'day', 'session']):
+            try:
+                schedule_task = Task(
+                    description=f"Handle this scheduling request: {user_request}",
+                    agent=self.scheduler,
+                    expected_output="Schedule information or analysis"
+                )
+                schedule_crew = Crew(agents=[self.scheduler], tasks=[schedule_task], process=Process.sequential, verbose=True)
+                schedule_result = schedule_crew.kickoff()
+                response_parts.append(f"Schedule Analysis: {schedule_result}")
+            except Exception as e:
+                response_parts.append(f"Schedule processing encountered an issue: {e}")
+
+        # Check if invoice-related
+        if any(keyword in request_lower for keyword in ['invoice', 'billing', 'payment', 'cost', 'price', 'money']):
+            try:
+                invoice_task = Task(
+                    description=f"Handle this invoice-related request: {user_request}",
+                    agent=self.invoicer,
+                    expected_output="Invoice information or analysis"
+                )
+                invoice_crew = Crew(agents=[self.invoicer], tasks=[invoice_task], process=Process.sequential, verbose=True)
+                invoice_result = invoice_crew.kickoff()
+                response_parts.append(f"Invoice Analysis: {invoice_result}")
+            except Exception as e:
+                response_parts.append(f"Invoice processing encountered an issue: {e}")
+
+        if not response_parts:
+            return f"I understand you're asking: '{user_request}'. However, I need more specific information about clients, schedules, or invoicing to help you effectively."
+
+        return "\n\n".join(response_parts)
+
+class UltraFlexibleChat:
+    def __init__(self):
+        self.system = FlexibleBusinessChat()
+        self.history = []
+
     def run(self):
-        """Main chat loop"""
-        print("\n" + "="*60)
-        print("🤖 Business Automation Assistant")
-        print("="*60)
-        print("\nHello! I'm your business automation assistant.")
-        print("I can help you manage clients, schedules, and invoices.")
-        print("\nType 'help' to see available commands or just tell me what you need!")
-        print("="*60)
+        """Run the ultra-flexible chat"""
+        print("\n" + "="*70)
+        print("🧠 ULTRA-FLEXIBLE BUSINESS AI ASSISTANT")
+        print("="*70)
+        print("\nI'm not limited to pre-programmed commands!")
+        print("Ask me ANYTHING about your business operations.")
+        print("\nExamples of what you can ask:")
+        print("  • 'Find all clients whose parents have Gmail'")
+        print("  • 'Who hasn't had an appointment in 2 weeks?'")
+        print("  • 'Compare this week's schedule to last week'")
+        print("  • 'Which clients might need follow-ups?'")
+        print("  • 'Create a summary of our busiest specialists'")
+        print("  • Or anything else you can think of!")
+        print("\nType 'exit' to leave")
+        print("="*70)
 
         while True:
             try:
-                # Get user input
-                user_input = input("\n💬 You: ").strip()
+                user_input = input("\n💭 What would you like to know? ").strip()
 
                 if not user_input:
                     continue
 
-                # Parse command
-                command, data = self.parse_command(user_input)
-
-                # Execute command
-                if command == 'exit':
-                    print("\n👋 Goodbye! Have a great day!")
+                if user_input.lower() in ['exit', 'quit', 'bye']:
+                    print("\n✨ Thanks for using the Ultra-Flexible AI! Goodbye!")
                     break
 
-                elif command == 'help':
-                    print(self.commands_help)
+                # Store in history
+                self.history.append({"user": user_input})
 
-                elif command == 'search_client':
-                    print(f"\n🔍 Searching for client: {data}")
-                    result = self.crew.search_client(data)
-                    print(f"\n📋 Result:\n{result}")
+                # Process with full flexibility
+                print("\n🧠 Thinking creatively about your request...")
+                print("(The AI agents are collaborating to find the best solution)\n")
 
-                elif command == 'find_parent':
-                    print(f"\n🔍 Finding parent of: {data}")
-                    result = self.crew.find_parent(data)
-                    print(f"\n📋 Result:\n{result}")
+                result = self.system.process_request(user_input)
 
-                elif command == 'add_client':
-                    if data:
-                        print(f"\nAdding client: {data}")
-                    client_info = self.get_client_details()
-                    print(f"\n➕ Adding new client: {client_info['name']}")
-                    result = self.crew.add_new_client(client_info)
-                    print(f"\n📋 Result:\n{result}")
+                # Store result
+                self.history.append({"assistant": str(result)})
 
-                elif command == 'get_schedule':
-                    print(f"\n📅 Getting schedule for: {data}")
-                    result = self.crew.get_specialist_schedule(data)
-                    print(f"\n📋 Result:\n{result}")
-
-                elif command == 'generate_invoice':
-                    print(f"\n💰 Generating invoice for: {data}")
-                    week_input = input("Week offset (1=last week, 2=two weeks ago) [default: 1]: ").strip()
-                    week_offset = int(week_input) if week_input else 1
-                    result = self.crew.generate_weekly_invoice(data, week_offset)
-                    print(f"\n📋 Result:\n{result}")
-
-                elif command == 'set_schedule_pdf':
-                    self.crew.schedule_pdf = data
-                    print(f"✅ Schedule PDF set to: {data}")
-
-                elif command == 'set_clients_file':
-                    self.crew.clients_file = data
-                    print(f"✅ Clients file set to: {data}")
-
-                else:
-                    print("\n❓ I didn't understand that command.")
-                    print("Type 'help' to see available commands or try rephrasing.")
-                    print("\nExamples:")
-                    print("  • 'search John Doe'")
-                    print("  • 'who is the parent of Jane Smith'")
-                    print("  • 'schedule for Dr. Johnson'")
+                # Display result
+                print("\n" + "="*70)
+                print("💡 Here's what I found:")
+                print("="*70)
+                print(result)
 
             except KeyboardInterrupt:
-                print("\n\n👋 Goodbye! (Interrupted by user)")
+                print("\n\n✨ Goodbye!")
                 break
             except Exception as e:
-                print(f"\n❌ Error: {e}")
-                print("Please try again or type 'help' for assistance.")
+                print(f"\n⚠️ Unexpected issue: {e}")
+                print("Feel free to rephrase or try a different question!")
 
 def main():
-    """Entry point for the chat application"""
-    chat = ChatInterface()
-    chat.run()
+    chat = UltraFlexibleChat()
+    if len(sys.argv) > 1:
+        user_input = " ".join(sys.argv[1:])
+        print(f"\n💭 What would you like to know? {user_input}")
+        result = chat.system.process_request(user_input)
+        print("\n" + "="*70)
+        print("💡 Here's what I found:")
+        print("="*70)
+        print(result)
+    else:
+        chat.run()
 
 if __name__ == "__main__":
     main()

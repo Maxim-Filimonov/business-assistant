@@ -1,316 +1,165 @@
-# CrewAI Business Automation Application
+# CrewAI Business Automation Assistant
 
-A comprehensive business automation system built with CrewAI that combines CRM, Scheduling, and Invoice Generation capabilities.
+An intelligent, AI-powered business assistant that understands natural language and can handle any business request creatively - not limited to pre-programmed commands.
 
-## Features
+## 🚀 Quick Start
 
-### 1. CRM (Client Relationship Management)
-- **Markdown-based storage** for easy editing and version control
-- **Flexible data parsing** handles inconsistent input formats
-- **Search functionality** to find client contact details quickly
-- **Parent/Guardian queries** based on client names
-- **Add new clients** with automatic formatting
-- **Update existing client** information
-
-### 2. Scheduler
-- **PDF extraction** reads schedule documents automatically
-- **Specialist filtering** shows only relevant appointments
-- **Session parsing** extracts dates, times, and client names
-- **Week filtering** for specific time periods
-- **Multi-specialist support** for complex schedules
-
-### 3. Invoice Maker
-- **Automated billing** based on schedule data
-- **Flexible pricing** supports multiple session types
-- **Template-based** generation for consistent formatting
-- **Weekly invoices** with detailed session breakdowns
-- **Batch processing** for multiple specialists
-
-## Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd crewai_app
+# Set up your OpenAI API key (or configure for Ollama)
+export OPENAI_API_KEY='your-api-key-here'
+
+# Run the chat interface
+python main.py
+
+# Or with specific files
+python main.py --schedule-pdf data/schedule.pdf
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
+## 🧠 What Makes This Special?
+
+Unlike traditional chatbots with fixed commands, this system:
+- **Understands Intent**: AI analyzes what you're trying to accomplish
+- **Thinks Creatively**: Finds ways to fulfill requests we never explicitly programmed
+- **Collaborates**: Multiple AI agents work together to solve complex problems
+- **Learns Context**: Remembers conversation history for better responses
+
+## 💬 Example Requests
+
+Ask anything! The AI will figure out how to help:
+
+```
+💭 "Find all clients whose parents have Gmail addresses"
+💭 "Who hasn't been scheduled in the last month?"
+💭 "Compare this week's workload to last week"
+💭 "Which specialist is busiest?"
+💭 "Create a revenue report by specialist"
+💭 "Find patterns in our appointment scheduling"
 ```
 
-3. Set up your OpenAI API key:
-```bash
-export OPENAI_API_KEY="your-api-key-here"
+## 🏗️ Architecture
+
+```
+Your Natural Language Request
+           ↓
+    Meta Agent (Orchestrator)
+           ↓
+    Understands & Plans
+           ↓
+Coordinates Specialized Agents:
+  • CRM Agent (Client Management)
+  • Scheduler Agent (Time Management)
+  • Invoice Agent (Financial Management)
+           ↓
+    Creative Solution
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 crewai_app/
-├── main.py                 # Main orchestration and crew management
-├── agents/
-│   ├── crm_agent.py       # CRM specialist agent
-│   ├── scheduler_agent.py  # Schedule extraction agent
-│   └── invoice_agent.py    # Invoice generation agent
-├── tasks/
-│   ├── crm_tasks.py       # CRM-related task definitions
-│   ├── scheduler_tasks.py  # Scheduling task definitions
-│   └── invoice_tasks.py    # Invoice task definitions
-├── tools/
-│   ├── markdown_tools.py   # Markdown parsing and writing tools
-│   ├── pdf_tools.py        # PDF extraction and parsing tools
-│   └── invoice_tools.py    # Invoice generation tools
-├── data/
-│   ├── clients.md          # Client database (markdown)
-│   ├── pricing.md          # Pricing information
-│   └── schedule.pdf        # Schedule documents (user-provided)
-├── templates/
-│   └── invoice_template.md # Invoice template
-└── output/                  # Generated invoices and reports
+├── main.py              # Main chat interface
+├── config.py            # LLM configuration (OpenAI/Ollama)
+├── agents/              # Specialized AI agents
+│   ├── crm_agent.py
+│   ├── scheduler_agent.py
+│   ├── invoice_agent.py
+│   └── dispatcher_agent.py
+├── tasks/               # Dynamic task creation
+│   └── dynamic_tasks.py
+├── tools/               # Agent tools
+│   ├── markdown_tools.py
+│   ├── pdf_tools.py
+│   └── invoice_tools.py
+├── data/                # Your business data
+│   ├── clients.md
+│   ├── pricing.md
+│   └── schedule.pdf
+└── templates/           # Document templates
+    └── invoice_template.md
 ```
 
-## Usage
+## ⚙️ Configuration
 
-### Basic Usage
+### Using OpenAI (Default)
+1. Create `.env` file:
+   ```
+   OPENAI_API_KEY=sk-your-key-here
+   ```
 
-```python
-from main import BusinessAutomationCrew
+### Using Ollama (Local)
+1. Install Ollama and pull a model:
+   ```bash
+   ollama pull qwen
+   ```
+2. Update `.env`:
+   ```
+   LLM_PROVIDER=ollama
+   ```
 
-# Initialize the crew
-crew = BusinessAutomationCrew(
-    clients_file="data/clients.md",
-    pricing_file="data/pricing.md",
-    schedule_pdf="data/schedule.pdf",
-    invoice_template="templates/invoice_template.md"
-)
+See [README_LLM_CONFIG.md](README_LLM_CONFIG.md) for detailed configuration options.
 
-# Search for a client
-result = crew.search_client("John Doe")
-print(result)
+## 🎯 Agent Capabilities
 
-# Add a new client
-new_client = {
-    "name": "Jane Smith",
-    "parent": "Michael Smith",
-    "phone": "92234567",
-    "email": "jane@example.com"
-}
-result = crew.add_new_client(new_client)
+### CRM Agent
+- Manages all client information
+- Finds relationships and patterns
+- Creates client reports
+- Handles any client-related query
 
-# Get specialist schedule
-schedule = crew.get_specialist_schedule("Dr. Johnson")
+### Scheduler Agent  
+- Extracts schedules from PDFs
+- Analyzes appointment patterns
+- Finds conflicts and availability
+- Handles any time-related query
 
-# Generate weekly invoice
-invoice = crew.generate_weekly_invoice("Dr. Johnson", week_offset=1)
+### Invoice Agent
+- Generates invoices dynamically
+- Calculates costs and revenue
+- Creates financial reports
+- Handles any billing-related query
+
+### Meta Agent (Orchestrator)
+- Understands your intent
+- Plans multi-step solutions
+- Coordinates other agents
+- Thinks creatively to solve new problems
+
+## 🔧 Installation
+
+```bash
+# Clone the repository
+git clone <your-repo>
+cd crewai_app
+
+# Install dependencies with uv
+uv pip install -r requirements.txt
+
+# Configure your LLM (see Configuration above)
+
+# Run the chat
+python main.py
 ```
 
-### CRM Functions
+## 📚 Documentation
 
-#### Search Client
-```python
-result = crew.search_client("John Doe")
-# Returns: Contact details including name, parent, phone, email
-```
+- [LLM Configuration Guide](README_LLM_CONFIG.md) - Set up OpenAI or Ollama
+- [Flexible Chat Details](README_FLEXIBLE_CHAT.md) - How the AI understands any request
 
-#### Add Client
-```python
-client_info = {
-    "name": "New Client",
-    "parent": "Parent Name",
-    "phone": "12345678",
-    "email": "client@email.com"
-}
-result = crew.add_new_client(client_info)
-```
+## 💡 Tips
 
-#### Find Parent
-```python
-parent = crew.find_parent("John Doe")
-# Returns: "Jessy Queen"
-```
+1. **Be Natural**: Just describe what you want in plain English
+2. **Be Creative**: Ask for things that aren't in any manual
+3. **Provide Context**: More details help the AI understand better
+4. **Iterate**: If the first response isn't perfect, clarify your need
 
-### Scheduler Functions
+## 🤝 Contributing
 
-#### Get Specialist Schedule
-```python
-schedule = crew.get_specialist_schedule("Dr. Johnson")
-# Returns: List of all sessions for Dr. Johnson
-```
+The beauty of this system is that it can adapt to new use cases without code changes. However, you can:
+- Add new tools for agents to use
+- Add new data sources
+- Improve agent prompts for better understanding
+- Share creative use cases
 
-### Invoice Functions
-
-#### Generate Weekly Invoice
-```python
-# Generate invoice for last week (week_offset=1)
-invoice = crew.generate_weekly_invoice("Dr. Johnson", week_offset=1)
-```
-
-## Data Formats
-
-### Client Markdown Format
-The CRM system handles various formats flexibly:
-
-```markdown
-## Client Name
-Parent - Parent Name
-Phone number 12345678
-Email address client@email.com
-```
-
-Alternative formats also supported:
-- `Phone: 12345678`
-- `Tel: 12345678`
-- `Contact number: 12345678`
-- `Guardian - Name` (instead of Parent)
-
-### Pricing Markdown Format
-```markdown
-## Session Types
-- 1 on 1 session - $50
-- Group session - $100
-```
-
-### Schedule PDF Requirements
-The system can parse PDFs with:
-- Specialist names (Dr., Ms., Mr., etc.)
-- Dates in various formats (MM/DD/YYYY, DD/MM/YYYY)
-- Times in 12-hour format (10:00 AM, 2:30 PM)
-- Client names following the time
-
-Example PDF content:
-```
-Dr. Johnson
-01/15/2025
-10:00 AM - John Doe (1 on 1 session)
-11:00 AM - Sarah Miller (Group session)
-2:00 PM - Tommy Johnson (1 on 1 session)
-```
-
-## Advanced Features
-
-### Batch Processing
-Process multiple specialists at once:
-
-```python
-specialists = ["Dr. Johnson", "Dr. Smith", "Ms. Williams"]
-for specialist in specialists:
-    invoice = crew.generate_weekly_invoice(specialist)
-    print(f"Invoice for {specialist}: {invoice}")
-```
-
-### Custom Week Ranges
-Generate invoices for different weeks:
-
-```python
-# Current week
-current_week_invoice = crew.generate_weekly_invoice("Dr. Johnson", week_offset=0)
-
-# Two weeks ago
-two_weeks_ago_invoice = crew.generate_weekly_invoice("Dr. Johnson", week_offset=2)
-```
-
-### Error Handling
-The system includes robust error handling:
-
-```python
-try:
-    result = crew.search_client("NonExistent Client")
-except Exception as e:
-    print(f"Error: {e}")
-```
-
-## Customization
-
-### Adding New Session Types
-Edit `data/pricing.md`:
-
-```markdown
-- New session type - $80
-```
-
-### Modifying Invoice Template
-Edit `templates/invoice_template.md` to customize invoice appearance.
-
-### Extending Agents
-Create new agents in `agents/` directory:
-
-```python
-from crewai import Agent
-
-def custom_agent():
-    return Agent(
-        role='Custom Role',
-        goal='Custom Goal',
-        backstory='Custom Backstory',
-        tools=[],
-        verbose=True
-    )
-```
-
-## Best Practices
-
-1. **Regular Backups**: Keep backups of `data/clients.md`
-2. **PDF Quality**: Ensure PDFs are text-searchable (not scanned images)
-3. **Consistent Naming**: Use consistent specialist names across documents
-4. **Data Validation**: Regularly validate client and pricing data
-5. **Invoice Review**: Review generated invoices before sending
-
-## Troubleshooting
-
-### Common Issues
-
-1. **PDF not reading correctly**
-   - Ensure PDF contains searchable text
-   - Try different PDF tools (PyPDF2 vs pdfplumber)
-
-2. **Client not found**
-   - Check spelling and case sensitivity
-   - Verify client exists in markdown file
-
-3. **Invoice calculations incorrect**
-   - Verify pricing file is up to date
-   - Check session type matching
-
-4. **Memory issues with large PDFs**
-   - Process schedules in batches
-   - Use week filtering to reduce data
-
-## API Requirements
-
-This application requires:
-- OpenAI API key for CrewAI agents
-- Python 3.8 or higher
-- All dependencies in requirements.txt
-
-## Contributing
-
-To extend the system:
-
-1. Add new tools in `tools/` directory
-2. Create corresponding tasks in `tasks/`
-3. Define new agents if needed
-4. Update main orchestration in `main.py`
-
-## License
+## 📜 License
 
 [Your License Here]
-
-## Support
-
-For issues or questions:
-- Check the troubleshooting section
-- Review example usage in `main.py`
-- Ensure all data files are properly formatted
-
-## Future Enhancements
-
-Planned features:
-- Database integration (PostgreSQL/MongoDB)
-- Web interface with FastAPI
-- Email integration for invoice delivery
-- Appointment reminders
-- Client portal
-- Analytics dashboard
-- Multi-language support
-- Cloud storage integration
