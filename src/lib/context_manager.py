@@ -15,4 +15,8 @@ class ContextManager:
         context.add_message(role, content)
 
     def get_context(self, conversation_id: str) -> Context:
-        return self._conversations.get(conversation_id, Context(conversation_id))
+        # Ensure that newly created conversations are stored so that
+        # subsequent calls to ``get_context`` return the same instance and
+        # retain any messages that may have been added directly to the
+        # returned context.
+        return self._conversations.setdefault(conversation_id, Context(conversation_id))
