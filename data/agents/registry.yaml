@@ -1,0 +1,22 @@
+- id: crm
+  name: CRM Agent
+  description: Handles client data
+  capabilities:
+    - search_clients
+    - get_parent_info
+  status: available
+  data_source: clients.md
+- id: scheduler
+  name: Scheduler Agent
+  description: Manages schedules
+  capabilities:
+    - check_schedule
+  status: available
+  data_source: schedule.pdf
+- id: invoicer
+  name: Invoice Agent
+  description: Manages invoices
+  capabilities:
+    - generate_invoice
+  status: available
+  data_source: invoices
