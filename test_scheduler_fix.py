@@ -4,6 +4,15 @@ Test the scheduler agent with PDF extraction
 """
 
 import sys
+
+if "pytest" in sys.modules:
+    try:  # pragma: no cover - runtime availability check
+        import crewai  # noqa: F401
+    except ModuleNotFoundError:  # pragma: no cover
+        import pytest
+
+        pytest.skip("crewai is not installed", allow_module_level=True)
+
 from main import FlexibleBusinessChat
 
 def test_scheduler():
