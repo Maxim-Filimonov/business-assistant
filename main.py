@@ -9,7 +9,10 @@ from crewai import Crew, Process, Task
 from agents.crm_agent import crm_agent
 from agents.scheduler_agent import scheduler_agent
 from agents.invoice_agent import invoice_agent
+from agents.dispatcher_agent import dispatcher_agent
+from tasks.dynamic_tasks import create_dispatcher_task
 from config import get_llm
+from orchestrator import PlanningOrchestrator
 
 class FlexibleBusinessChat:
     def __init__(self,
@@ -31,6 +34,13 @@ class FlexibleBusinessChat:
         self.crm = crm_agent(clients_file=self.context['clients_file'])
         self.scheduler = scheduler_agent(schedule_pdf=self.context.get('schedule_pdf'))
         self.invoicer = invoice_agent()
+        self._crew_cls = Crew
+        self._dispatcher_factory = dispatcher_agent
+        self.orchestrator = PlanningOrchestrator(
+            dispatcher_factory=self._dispatcher_factory,
+            crew_cls=self._crew_cls,
+            llm_provider=get_llm,
+        )
 
         # Create a meta-agent that can understand and route any request
         self.meta_agent = self._create_meta_agent()
@@ -75,7 +85,19 @@ class FlexibleBusinessChat:
         """
         Process ANY user request by creating a dynamic task
         """
-        return self._process_fallback(user_request)
+        try:
+            return self._process_with_orchestrator(user_request)
+        except Exception:
+            return self._process_fallback(user_request)
+
+    def _process_with_orchestrator(self, user_request):
+        """Process the request using a planning-enabled orchestrator crew."""
+        result = self.orchestrator.dispatch(
+            user_request=user_request,
+            agents=[self.crm, self.scheduler, self.invoicer],
+            context=self.context,
+        )
+        return self._extract_response(result)
 
     def _process_sequential(self, user_request):
         """
@@ -118,8 +140,8 @@ class FlexibleBusinessChat:
                     agent=self.crm,
                     expected_output="CRM information or analysis"
                 )
-                crm_crew = Crew(agents=[self.crm], tasks=[crm_task], process=Process.sequential, verbose=True)
-                crm_result = crm_crew.kickoff()
+                crm_crew = self._crew_cls(agents=[self.crm], tasks=[crm_task], process=Process.sequential, verbose=True)
+                crm_result = self._extract_response(crm_crew.kickoff())
                 response_parts.append(f"CRM Analysis: {crm_result}")
             except Exception as e:
                 response_parts.append(f"CRM processing encountered an issue: {e}")
@@ -132,8 +154,8 @@ class FlexibleBusinessChat:
                     agent=self.scheduler,
                     expected_output="Schedule information or analysis"
                 )
-                schedule_crew = Crew(agents=[self.scheduler], tasks=[schedule_task], process=Process.sequential, verbose=True)
-                schedule_result = schedule_crew.kickoff()
+                schedule_crew = self._crew_cls(agents=[self.scheduler], tasks=[schedule_task], process=Process.sequential, verbose=True)
+                schedule_result = self._extract_response(schedule_crew.kickoff())
                 response_parts.append(f"Schedule Analysis: {schedule_result}")
             except Exception as e:
                 response_parts.append(f"Schedule processing encountered an issue: {e}")
@@ -146,8 +168,8 @@ class FlexibleBusinessChat:
                     agent=self.invoicer,
                     expected_output="Invoice information or analysis"
                 )
-                invoice_crew = Crew(agents=[self.invoicer], tasks=[invoice_task], process=Process.sequential, verbose=True)
-                invoice_result = invoice_crew.kickoff()
+                invoice_crew = self._crew_cls(agents=[self.invoicer], tasks=[invoice_task], process=Process.sequential, verbose=True)
+                invoice_result = self._extract_response(invoice_crew.kickoff())
                 response_parts.append(f"Invoice Analysis: {invoice_result}")
             except Exception as e:
                 response_parts.append(f"Invoice processing encountered an issue: {e}")
@@ -156,6 +178,15 @@ class FlexibleBusinessChat:
             return f"I understand you're asking: '{user_request}'. However, I need more specific information about clients, schedules, or invoicing to help you effectively."
 
         return "\n\n".join(response_parts)
+
+    @staticmethod
+    def _extract_response(result):
+        """Normalize Crew outputs to a simple string for the chat response."""
+        if isinstance(result, dict):
+            for key in ("final_output", "output", "result"):
+                if key in result:
+                    return result[key]
+        return result
 
 class UltraFlexibleChat:
     def __init__(self):
