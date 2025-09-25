@@ -16,7 +16,7 @@ from orchestrator import PlanningOrchestrator
 
 class FlexibleBusinessChat:
     def __init__(self,
-                 clients_file="data/clients.md",
+                 clients_db="data/clients.db",
                  pricing_file="data/pricing.md",
                  schedule_pdf="data/sample_schedule.pdf",
                  invoice_template="templates/invoice_template.md"):
@@ -24,14 +24,14 @@ class FlexibleBusinessChat:
         Initialize the ultra-flexible chat system
         """
         self.context = {
-            'clients_file': clients_file,
+            'clients_db': clients_db,
             'pricing_file': pricing_file,
             'schedule_pdf': schedule_pdf,
             'invoice_template': invoice_template
         }
 
         # Initialize agents
-        self.crm = crm_agent(clients_file=self.context['clients_file'])
+        self.crm = crm_agent(db_path=self.context['clients_db'])
         self.scheduler = scheduler_agent(schedule_pdf=self.context.get('schedule_pdf'))
         self.invoicer = invoice_agent()
         self._crew_cls = Crew
@@ -54,7 +54,7 @@ class FlexibleBusinessChat:
             goal='Understand and fulfill any business-related request by creatively using available agents and tools',
             backstory=f"""You are an intelligent orchestrator with access to three specialized teams:
 
-            1. CRM Team: Manages ALL client-related data. They have access to {self.context['clients_file']}.
+            1. CRM Team: Manages ALL client-related data. They have access to {self.context['clients_db']}.
                They can search, add, update, analyze, and create reports about clients.
 
             2. Scheduling Team: Handles ALL time-related tasks. They work with {self.context.get('schedule_pdf', 'schedule PDFs')}.

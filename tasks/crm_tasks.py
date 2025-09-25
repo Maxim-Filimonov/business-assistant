@@ -1,34 +1,34 @@
-"""
-CRM Tasks - Define specific tasks for client management
-"""
+"""CRM Tasks - Define specific tasks for SQLite-backed client management."""
 
 from crewai import Task
 
-def search_client_task(agent, client_name, clients_file):
-    """Task to search for client contact details"""
+
+def search_client_task(agent, client_name: str, db_path: str):
+    """Task to search for client contact details."""
+
     return Task(
         description=f"""
         Search for the client named '{client_name}' in the CRM database.
-        
+
         Steps:
-        1. Read the markdown file at {clients_file}
-        2. Parse the client information with flexible format handling
-        3. Find the specific client (case-insensitive search)
-        4. Extract and return their contact details including:
+        1. Use the CRM Client Reader tool pointed at {db_path}.
+        2. Request the specific client (case-insensitive lookup).
+        3. Return their structured details, including:
            - Full name
            - Parent/Guardian name
            - Phone number
            - Email address
-        5. Handle any inconsistent data formats gracefully
-        
-        If the client is not found, provide a clear message.
+           - Notes summary if present
+        4. If the client is not found, provide a clear message.
         """,
         agent=agent,
-        expected_output="Client contact details or 'not found' message"
+        expected_output="Client contact details or 'not found' message",
     )
 
-def add_client_task(agent, client_info, clients_file):
-    """Task to add a new client to the CRM"""
+
+def add_client_task(agent, client_info: dict, db_path: str):
+    """Task to add a new client to the CRM."""
+
     return Task(
         description=f"""
         Add a new client to the CRM database with the following information:
@@ -36,82 +36,73 @@ def add_client_task(agent, client_info, clients_file):
         - Parent: {client_info.get('parent')}
         - Phone: {client_info.get('phone')}
         - Email: {client_info.get('email')}
-        
+        - Notes (optional): {client_info.get('notes')}
+
         Steps:
-        1. Read the existing markdown file at {clients_file}
-        2. Check if the client already exists (avoid duplicates)
-        3. Format the new client information properly
-        4. Append the new client to the markdown file
-        5. Maintain consistent formatting with existing entries
-        6. Confirm successful addition
-        
-        Handle missing or incomplete information appropriately.
+        1. Run a diff preview for the proposed record using the CRM Client Diff Preview tool.
+        2. Share the resulting diff with the user for approval.
+        3. After explicit approval, call CRM Client Apply Update with the same payload.
+        4. Confirm that the markdown snapshot was exported successfully.
         """,
         agent=agent,
-        expected_output="Confirmation of client addition or error message"
+        expected_output="Diff preview followed by confirmation of client addition once approved.",
     )
 
-def query_parent_task(agent, client_name, clients_file):
-    """Task to query parent name based on client name"""
+
+def query_parent_task(agent, client_name: str, db_path: str):
+    """Task to query parent name based on client name."""
+
     return Task(
         description=f"""
         Find the parent/guardian name for the client '{client_name}'.
-        
+
         Steps:
-        1. Read the markdown file at {clients_file}
-        2. Parse all client information
-        3. Search for the specific client (case-insensitive)
-        4. Extract and return the parent/guardian name
-        5. If multiple matches exist, list all possibilities
-        
-        Handle various formats like:
-        - "Parent - John Doe"
-        - "Guardian: Jane Smith"
-        - "Parent/Guardian - Mike Johnson"
+        1. Use the CRM Client Reader to fetch the specific client from {db_path}.
+        2. Extract the parent/guardian information.
+        3. If multiple matches exist, list all possibilities and highlight differences.
+        4. Present the findings clearly for the user.
         """,
         agent=agent,
-        expected_output="Parent/guardian name or 'not found' message"
+        expected_output="Parent/guardian name or 'not found' message",
     )
 
-def update_client_task(agent, client_name, updates, clients_file):
-    """Task to update existing client information"""
+
+def update_client_task(agent, client_name: str, updates: dict, db_path: str):
+    """Task to update existing client information."""
+
     return Task(
         description=f"""
         Update the information for client '{client_name}' with the following changes:
         {updates}
-        
+
         Steps:
-        1. Read the markdown file at {clients_file}
-        2. Find the specific client entry
-        3. Update the specified fields while preserving other information
-        4. Rewrite the file with updated information
-        5. Maintain markdown formatting consistency
-        6. Confirm successful update
-        
-        Ensure data integrity and handle errors gracefully.
+        1. Use the CRM Client Diff Preview tool to generate a unified diff of the proposed update.
+        2. Share the diff with the user and wait for confirmation before making changes.
+        3. Once approved, call CRM Client Apply Update with the exact payload.
+        4. Confirm that the markdown export has been refreshed for the client.
+        5. Report the final state back to the user.
         """,
         agent=agent,
-        expected_output="Confirmation of update or error message"
+        expected_output="Diff preview and confirmation of update once approved",
     )
 
-def list_all_clients_task(agent, clients_file):
-    """Task to list all clients in the database"""
+
+def list_all_clients_task(agent, db_path: str):
+    """Task to list all clients in the database."""
+
     return Task(
         description=f"""
         List all clients currently in the CRM database.
-        
+
         Steps:
-        1. Read the markdown file at {clients_file}
-        2. Parse all client entries
-        3. Create a summary list with key information for each client:
+        1. Use the CRM Client Reader tool (without a specific name) targeting {db_path}.
+        2. Summarize key information for each client:
            - Name
            - Parent (if available)
            - Contact status (has phone/email)
-        4. Format the list clearly
-        5. Include a total count of clients
-        
-        Handle any formatting inconsistencies in the source file.
+        3. Mention how to locate the generated markdown snapshots for human review.
+        4. Provide the total count of clients.
         """,
         agent=agent,
-        expected_output="Formatted list of all clients with summary information"
+        expected_output="Formatted list of all clients with summary information",
     )
