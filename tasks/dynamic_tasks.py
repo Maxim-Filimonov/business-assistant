@@ -17,8 +17,8 @@ def create_dynamic_task(agent, user_request, context=None):
     # Build context string
     context_str = ""
     if context:
-        if context.get('clients_file'):
-            context_str += f"\nClients database location: {context['clients_file']}"
+        if context.get('clients_db'):
+            context_str += f"\nClients database location: {context['clients_db']}"
         if context.get('pricing_file'):
             context_str += f"\nPricing information location: {context['pricing_file']}"
         if context.get('schedule_pdf'):
@@ -75,7 +75,7 @@ def create_dispatcher_task(dispatcher, user_request, available_agents, context=N
     if context:
         context_str = f"""
         Available resources:
-        - Clients database: {context.get('clients_file', 'Not set')}
+        - Clients database: {context.get('clients_db', 'Not set')}
         - Pricing information: {context.get('pricing_file', 'Not set')}
         - Schedule PDF: {context.get('schedule_pdf', 'Not set')}
         - Invoice template: {context.get('invoice_template', 'Not set')}

@@ -133,7 +133,7 @@ def run_full_demo():
     # Initialize the crew
     print("\nInitializing Business Automation Crew...")
     crew = BusinessAutomationCrew(
-        clients_file="data/clients.md",
+        clients_db="data/clients.db",
         pricing_file="data/pricing.md",
         schedule_pdf="data/schedule.pdf",  # You'll need to provide this
         invoice_template="templates/invoice_template.md"
@@ -166,7 +166,7 @@ def interactive_mode():
     print("="*60)
     
     crew = BusinessAutomationCrew(
-        clients_file="data/clients.md",
+        clients_db="data/clients.db",
         pricing_file="data/pricing.md",
         schedule_pdf="data/schedule.pdf",
         invoice_template="templates/invoice_template.md"
