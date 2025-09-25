@@ -234,7 +234,7 @@ class CRMClientDiffPreview(BaseTool):
             difflib.unified_diff(
                 old_markdown.splitlines(),
                 new_markdown.splitlines(),
-                fromfile="current.md" if existing else "(new client)",
+                fromfile="current.md" if baseline else "(new client)",
                 tofile="proposed.md",
                 lineterm="",
             )
